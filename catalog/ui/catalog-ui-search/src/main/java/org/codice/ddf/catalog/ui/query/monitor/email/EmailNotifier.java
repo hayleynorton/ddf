@@ -127,7 +127,7 @@ public class EmailNotifier implements QueryUpdateSubscriber {
         .forEach(pair -> sendEmailsForWorkspace(pair.getLeft(), pair.getRight()));
   }
 
-  private void sendEmailsForWorkspace(WorkspaceMetacardImpl workspaceMetacard, Long hitCount) {
+  public void sendEmailsForWorkspace(WorkspaceMetacardImpl workspaceMetacard, Long hitCount) {
     subscriptionsPersistentStore
         .getEmails(workspaceMetacard.getId())
         .forEach(email -> sendEmailForWorkspace(workspaceMetacard, hitCount, email));
@@ -153,7 +153,7 @@ public class EmailNotifier implements QueryUpdateSubscriber {
 
       mimeMessage.setText(emailBody);
 
-      LOGGER.trace("Attempting to send email");
+      LOGGER.trace("Attempting to send email to {}", email);
 
       smtpClient.send(mimeMessage);
 

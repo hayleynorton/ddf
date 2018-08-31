@@ -698,7 +698,7 @@ public class EndpointUtil {
   }
 
   /**
-   * Find the workspace metacard based on the workspace identifier. If the workspsace cannot be
+   * Find the workspace metacard based on the workspace identifier. If the workspace cannot be
    * found, then return <code>null</code>.
    *
    * @param workspaceId the workspace identifier

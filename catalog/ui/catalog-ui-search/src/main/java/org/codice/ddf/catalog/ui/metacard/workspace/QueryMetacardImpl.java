@@ -37,6 +37,7 @@ public class QueryMetacardImpl extends MetacardImpl {
   public QueryMetacardImpl(Metacard wrappedMetacard) {
     super(wrappedMetacard, TYPE);
     setTags(Collections.singleton(QueryMetacardTypeImpl.QUERY_TAG));
+    // setWorkspaceId((String) wrappedMetacard.getAttribute(Core.ID).getValue());
   }
 
   public static QueryMetacardImpl from(Metacard metacard) {
@@ -54,6 +55,10 @@ public class QueryMetacardImpl extends MetacardImpl {
   public void setEnterprise(Boolean b) {
     setAttribute(QueryMetacardTypeImpl.QUERY_ENTERPRISE, b);
   }
+
+  /*public void setWorkspaceId(String workspaceId) {
+    setAttribute(QueryMetacardTypeImpl.WORKSPACE_ID, workspaceId);
+  }*/
 
   /**
    * Get a list of the query sources.
