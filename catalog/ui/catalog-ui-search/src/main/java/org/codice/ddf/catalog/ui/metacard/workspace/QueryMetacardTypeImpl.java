@@ -48,6 +48,8 @@ public class QueryMetacardTypeImpl extends MetacardTypeImpl {
 
   public static final String SCHEDULES = "schedules";
 
+  public static final String WORKSPACE_ID = "workspace-id";
+
   private static final Set<AttributeDescriptor> QUERY_DESCRIPTORS;
 
   static {
@@ -146,6 +148,15 @@ public class QueryMetacardTypeImpl extends MetacardTypeImpl {
             false /* tokenized */,
             true /* multivalued */,
             BasicTypes.XML_TYPE));
+
+    QUERY_DESCRIPTORS.add(
+        new AttributeDescriptorImpl(
+            WORKSPACE_ID,
+            false /* indexed */,
+            true /* stored */,
+            false /* tokenized */,
+            false /* multivalued */,
+            BasicTypes.STRING_TYPE));
   }
 
   public QueryMetacardTypeImpl() {

@@ -21,19 +21,25 @@ import static spark.Spark.get;
 import static spark.Spark.post;
 
 import com.google.common.collect.ImmutableMap;
+import ddf.catalog.data.Metacard;
 import ddf.catalog.source.UnsupportedQueryException;
+import ddf.security.SubjectIdentity;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Function;
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.subject.Subject;
 import org.boon.json.JsonParserFactory;
 import org.boon.json.JsonSerializerFactory;
 import org.boon.json.ObjectMapper;
 import org.boon.json.implementation.ObjectMapperImpl;
 import org.codice.ddf.catalog.ui.metacard.EntityTooLargeException;
+import org.codice.ddf.catalog.ui.metacard.workspace.WorkspaceMetacardImpl;
 import org.codice.ddf.catalog.ui.query.cql.CqlQueryResponse;
 import org.codice.ddf.catalog.ui.query.cql.CqlRequest;
 import org.codice.ddf.catalog.ui.query.geofeature.FeatureService;
 import org.codice.ddf.catalog.ui.query.handlers.CqlTransformHandler;
+import org.codice.ddf.catalog.ui.query.monitor.email.EmailNotifier;
 import org.codice.ddf.catalog.ui.util.EndpointUtil;
 import org.codice.ddf.catalog.ui.ws.JsonRpc;
 import org.codice.ddf.spatial.geocoding.Suggestion;
@@ -53,6 +59,10 @@ public class QueryApplication implements SparkApplication, Function {
 
   private CqlTransformHandler cqlTransformHandler;
 
+  private SubjectIdentity subjectIdentity;
+
+  private EmailNotifier emailNotifierService;
+
   private ObjectMapper mapper =
       new ObjectMapperImpl(
           new JsonParserFactory().usePropertyOnly(),
@@ -65,8 +75,13 @@ public class QueryApplication implements SparkApplication, Function {
 
   private EndpointUtil util;
 
-  public QueryApplication(CqlTransformHandler cqlTransformHandler) {
+  public QueryApplication(
+      CqlTransformHandler cqlTransformHandler,
+      SubjectIdentity subjectIdentity,
+      EmailNotifier emailNotifierService) {
     this.cqlTransformHandler = cqlTransformHandler;
+    this.subjectIdentity = subjectIdentity;
+    this.emailNotifierService = emailNotifierService;
   }
 
   @Override
@@ -82,6 +97,17 @@ public class QueryApplication implements SparkApplication, Function {
         (req, res) -> {
           CqlRequest cqlRequest = mapper.readValue(util.safeGetBody(req), CqlRequest.class);
           CqlQueryResponse cqlQueryResponse = util.executeCqlQuery(cqlRequest);
+          // TODO: FIX THIS
+          if (cqlQueryResponse.getResults().size() != 0) {
+            Metacard metacard = util.findWorkspace("some_workspace");
+            WorkspaceMetacardImpl workspaceMetacard = WorkspaceMetacardImpl.from(metacard);
+            String ownerEmail = workspaceMetacard.getOwner();
+            Subject subject = SecurityUtils.getSubject();
+            String userEmail = subjectIdentity.getUniqueIdentifier(subject);
+            if (userEmail.equals(ownerEmail)) {
+              emailNotifierService.sendEmailsForWorkspace(workspaceMetacard, 1L);
+            }
+          }
           return mapper.toJson(cqlQueryResponse);
         });
 

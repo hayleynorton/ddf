@@ -16,6 +16,7 @@ package org.codice.ddf.catalog.ui.metacard.workspace;
 import ddf.catalog.data.Attribute;
 import ddf.catalog.data.Metacard;
 import ddf.catalog.data.impl.MetacardImpl;
+import ddf.catalog.data.types.Core;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +38,7 @@ public class QueryMetacardImpl extends MetacardImpl {
   public QueryMetacardImpl(Metacard wrappedMetacard) {
     super(wrappedMetacard, TYPE);
     setTags(Collections.singleton(QueryMetacardTypeImpl.QUERY_TAG));
+    setWorkspaceId((String) wrappedMetacard.getAttribute(Core.ID).getValue());
   }
 
   public static QueryMetacardImpl from(Metacard metacard) {
@@ -53,6 +55,10 @@ public class QueryMetacardImpl extends MetacardImpl {
 
   public void setEnterprise(Boolean b) {
     setAttribute(QueryMetacardTypeImpl.QUERY_ENTERPRISE, b);
+  }
+
+  public void setWorkspaceId(String workspaceId) {
+    setAttribute(QueryMetacardTypeImpl.WORKSPACE_ID, workspaceId);
   }
 
   /**

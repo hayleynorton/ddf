@@ -368,7 +368,9 @@
     <bean id="queryApplication" class="org.codice.ddf.catalog.ui.query.QueryApplication">
         <property name="featureService" ref="featureService"/>
         <property name="endpointUtil" ref="endpointUtil"/>
+        <argument ref="emailNotifierService"/>
         <argument ref="cqlTransformHandler"/>
+        <argument ref="subjectIdentity"/>
     </bean>
 
     <reference id="mimeTypeMapper" interface="ddf.mime.MimeTypeMapper"/>
