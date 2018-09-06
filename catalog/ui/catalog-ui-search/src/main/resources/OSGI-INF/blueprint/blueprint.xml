@@ -594,7 +594,6 @@
             persistent-id="org.codice.ddf.catalog.ui.query.monitor.impl.WorkspaceQueryService"
             update-strategy="container-managed"/>
         <property name="queryTimeoutMinutes" value="5"/>
-        <property name="cronString" value="0 0 0 * * ?"/>
         <property name="queryTimeInterval" value="1440"/>
         <argument>
             <bean class="org.codice.ddf.catalog.ui.query.monitor.impl.QueryUpdateSubscriberList">
@@ -650,5 +649,13 @@
         </service-properties>
         <bean class="org.codice.ddf.catalog.ui.metacard.impl.IdentitySplitter"/>
     </service>
+
+    <bean id="subscribedWorkspaceNotifier" class="org.codice.ddf.catalog.ui.query.monitor.email.SubscribedWorkspaceNotifier">
+        <property name="endpointUtil" ref="endpointUtil"/>
+        <property name="subjectIdentity" ref="subjectIdentity"/>
+        <property name="emailNotifierService" ref="emailNotifierService"/>
+    </bean>
+
+    <service ref="subscribedWorkspaceNotifier" interface="ddf.catalog.plugin.PostQueryPlugin" />
 
 </blueprint>
