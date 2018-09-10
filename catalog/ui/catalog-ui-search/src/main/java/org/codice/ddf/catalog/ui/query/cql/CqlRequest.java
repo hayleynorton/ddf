@@ -152,6 +152,7 @@ public class CqlRequest {
     String source = parseSrc(localSource);
 
     QueryRequest queryRequest;
+
     if (CACHE_SOURCE.equals(source)) {
       queryRequest = new QueryRequestImpl(query, true);
       queryRequest.getProperties().put("mode", CACHE_SOURCE);
@@ -159,6 +160,8 @@ public class CqlRequest {
       queryRequest = new QueryRequestImpl(query, Collections.singleton(source));
       queryRequest.getProperties().put("mode", "update");
     }
+
+    queryRequest.getProperties().put("id", this.getId());
 
     if (excludeUnnecessaryAttributes) {
       queryRequest

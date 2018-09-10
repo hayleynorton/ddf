@@ -651,9 +651,10 @@
     </service>
 
     <bean id="subscribedWorkspaceNotifier" class="org.codice.ddf.catalog.ui.query.monitor.email.SubscribedWorkspaceNotifier">
-        <property name="endpointUtil" ref="endpointUtil"/>
         <property name="subjectIdentity" ref="subjectIdentity"/>
         <property name="emailNotifierService" ref="emailNotifierService"/>
+        <property name="filterBuilder" ref="filterBuilder"/>
+        <property name="catalogFramework" ref="catalogFramework"/>
     </bean>
 
     <service ref="subscribedWorkspaceNotifier" interface="ddf.catalog.plugin.PostQueryPlugin" />
