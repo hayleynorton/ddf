@@ -57,6 +57,7 @@ module.exports = Marionette.CollectionView.extend({
       isFormBuilder: this.options.isFormBuilder || false,
       isSortable: !this.sortable.options.disabled,
       suggester: this.options.suggester,
+      includedAttributes: this.options.includedAttributes,
     }
   },
   initialize() {
