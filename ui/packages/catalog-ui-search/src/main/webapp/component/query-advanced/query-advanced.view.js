@@ -194,7 +194,19 @@ module.exports = Marionette.LayoutView.extend({
     }
   },
   validate() {
-    return this.querySettings.currentView.validate()
+    const errorMessages = this.querySettings.currentView.validate()
+    const filters = this.queryAdvanced.currentView.getFilters().filters
+    for (let i = 0; i < filters.length; i++) {
+      const filter = filters[i]
+      const geometry = filter.geojson && filter.geojson.geometry ? filter.geojson.geometry : null
+      if (geometry && geometry.type === 'Polygon' && geometry.coordinates[0].length < 4) {
+        errorMessages.push({ title: 'Address formatting errors with entered polygon', body: 'Polygon coordinates must be in the form [[x,y],[x,y],[x,y],[x,y], ... ]'})
+      }
+      if (geometry && geometry.type === 'LineString' && geometry.coordinates.length < 2) {
+        errorMessages.push({ title: 'Address formatting errors with entered line', body: 'Line coordinates must be in the form [[x,y],[x,y], ... ]'})
+      }
+    }
+    return errorMessages
   },
   setDefaultTitle() {
     this.model.set('title', this.model.get('cql'))
