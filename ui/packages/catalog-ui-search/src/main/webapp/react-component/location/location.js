@@ -44,6 +44,7 @@ const readableNames = {
   dmsSouth: 'latitude',
   dmsWest: 'longitude',
   dmsEast: 'longitude',
+  lineWidth: 'buffer width',
 }
 
 const validLatLon = {
@@ -117,6 +118,7 @@ const Root = styled.div`
 
 const Component = CustomElements.registerReact('location')
 let errors = false
+let errorMsg = ''
 let inValidInput = ''
 let inValidKey = ''
 let defaultCoord = ''
@@ -145,8 +147,7 @@ const LocationInput = props => {
             <Invalid>
               &nbsp;
               <span className="fa fa-exclamation-triangle" />
-              &nbsp; {inValidInput} is not an acceptable {inValidKey} value.
-              Defaulting to {defaultCoord}. &nbsp; &nbsp;
+              {errorMsg}
               <span className="fa fa-times" onClick={removeErrorBox} />
             </Invalid>
           ) : (
@@ -162,12 +163,14 @@ const LocationInput = props => {
 }
 
 const ddValidators = {
-  lat: value => value <= 90 && value >= -90,
-  lon: value => value <= 180 && value >= -180,
-  north: value => value <= 90 && value >= -90,
-  west: value => value <= 180 && value >= -180,
-  south: value => value <= 90 && value >= -90,
-  east: value => value <= 180 && value >= -180,
+  lat: value => value <= 90 && value >= -90 && value.length != 0,
+  lon: value => value <= 180 && value >= -180 && value.length != 0,
+  north: value => value <= 90 && value >= -90 && value.length != 0,
+  west: value => value <= 180 && value >= -180 && value.length != 0,
+  south: value => value <= 90 && value >= -90 && value.length != 0,
+  east: value => value <= 180 && value >= -180 && value.length != 0,
+  radius: value => value >= 0.000001,
+  lineWidth: value => value >= 0.000001,
 }
 
 let isDms = false
@@ -206,7 +209,24 @@ module.exports = ({ state, setState, options }) => (
           inValidInput = value
           inValidKey = readableNames[key]
           defaultCoord = getNegOrPosLatLon(key, value)
-          value = defaultCoord
+          if (key === 'radius') {
+            errorMsg = ' Radius cannot be empty or less than 0.00001.  '
+          } else if (value.length === 0) {
+            errorMsg =
+              ' ' +
+              inValidKey.replace(/^\w/, c => c.toUpperCase()) +
+              ' cannot be empty.  '
+          } else {
+            errorMsg =
+              ' ' +
+              inValidInput +
+              ' is not an acceptable ' +
+              inValidKey +
+              ' value. Defaulting to ' +
+              defaultCoord +
+              '.  '
+            value = defaultCoord
+          }
           setState(key, value)
           return
         }
