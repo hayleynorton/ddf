@@ -117,18 +117,16 @@ const PointRadiusUtmUps = props => {
     return lat > -90 && lat < 90 && lon > -180 && lon < 180
   }
   function testValidity() {
+    utmUpsZone = Number.parseInt(utmUpsZone)
+    utmUpsHemisphere = utmUpsHemisphere.toUpperCase()
     if(utmUpsEasting !== undefined) {
       utmUpsEasting = letterRegex.test(utmUpsEasting) ? NaN : Number.parseFloat(utmUpsEasting)
+      if(Number.isNaN(utmUpsEasting)) {
+        setErrorMessage('Easting value is invalid')
+      }
     }
     if(utmUpsNorthing !== undefined) {
       utmUpsNorthing = letterRegex.test(utmUpsNorthing) ? NaN : Number.parseFloat(utmUpsNorthing)
-    }
-    utmUpsZone = Number.parseInt(utmUpsZone)
-    utmUpsHemisphere = utmUpsHemisphere.toUpperCase()
-    if(utmUpsEasting !== undefined && Number.isNaN(utmUpsEasting)) {
-      setErrorMessage('Easting value is invalid')
-    }
-    if(utmUpsNorthing !== undefined) {
       if(Number.isNaN(utmUpsNorthing)) {
         setErrorMessage('Northing value is invalid')
       } else if(!Number.isNaN(utmUpsEasting)) {

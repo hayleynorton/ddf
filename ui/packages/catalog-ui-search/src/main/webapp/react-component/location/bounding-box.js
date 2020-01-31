@@ -144,6 +144,70 @@ const BoundingBoxUtmUps = props => {
     setState,
   } = props
 
+  const [upperLeftErrorMessage, setUpperLeftErrorMessage] = useState()
+  const [lowerRightErrorMessage, setLowerRightErrorMessage] = useState()
+  const letterRegex = /[a-z]/i
+  const northingOffset = 10000000
+
+  function upsValidDistance(distance) {
+    return distance >= 800000 && distance <= 3200000
+  }
+
+  function isLatLonValid(lat, lon) {
+    lat = parseFloat(lat)
+    lon = parseFloat(lon)
+    return lat > -90 && lat < 90 && lon > -180 && lon < 180
+  }
+
+  function testUtmUpsValidity(easting, northing, zoneNumber, hemisphere, setErrorMessage) {
+    zoneNumber = Number.parseInt(zoneNumber)
+    hemisphere = hemisphere.toUpperCase()
+    if(easting !== undefined) {
+      easting = letterRegex.test(easting) ? NaN : Number.parseFloat(easting)
+      if(Number.isNaN(easting)) {
+        setErrorMessage('Easting value is invalid')
+      }
+    }
+    if(northing !== undefined) {
+      northing = letterRegex.test(northing) ? NaN : Number.parseFloat(northing)
+      if(Number.isNaN(northing)) {
+        setErrorMessage('Northing value is invalid')
+      } else if(!Number.isNaN(easting)) {
+        const northernHemisphere = hemisphere === 'NORTHERN'
+        const isUps = zoneNumber === 0
+        const utmUpsParts = {
+          easting,
+          northing,
+          zoneNumber,
+          hemisphere,
+          northPole: northernHemisphere,
+        }
+        utmUpsParts.northing = isUps || northernHemisphere ? northing : northing - northingOffset
+        if (isUps && (!upsValidDistance(northing) || !upsValidDistance(easting))) {
+          setErrorMessage('Invalid UPS distance')
+        }
+        let { lat, lon } = converter.UTMUPStoLL(utmUpsParts)
+        lon = lon % 360
+        if (lon < -180) {
+          lon = lon + 360
+        }
+        if (lon > 180) {
+          lon = lon - 360
+        }
+        if(!isLatLonValid(lat, lon)) {
+          setErrorMessage('Invalid UTM/UPS coordinates')
+        } else {
+          setErrorMessage('')
+        }
+      }
+    }
+  }
+
+  function testValidity() {
+    testUtmUpsValidity(utmUpsUpperLeftEasting, utmUpsUpperLeftNorthing, utmUpsUpperLeftZone, utmUpsUpperLeftHemisphere, setUpperLeftErrorMessage)
+    testUtmUpsValidity(utmUpsLowerRightEasting, utmUpsLowerRightNorthing, utmUpsLowerRightZone, utmUpsLowerRightHemisphere, setLowerRightErrorMessage)
+  }
+
   return (
     <div>
       <div className="input-location">
@@ -154,24 +218,34 @@ const BoundingBoxUtmUps = props => {
               label="Easting"
               value={utmUpsUpperLeftEasting}
               onChange={value => setState('utmUpsUpperLeftEasting', value)}
+              onBlur={() => testValidity()}
               addon="m"
             />
             <TextField
               label="Northing"
               value={utmUpsUpperLeftNorthing}
               onChange={value => ('utmUpsUpperLeftNorthing', value)}
+              onBlur={() => testValidity()}
               addon="m"
             />
             <Zone
               value={utmUpsUpperLeftZone}
               onChange={value => setState('utmUpsUpperLeftZone', value)}
+              onBlur={() => testValidity()}
             />
             <Hemisphere
               value={utmUpsUpperLeftHemisphere}
               onChange={value => setState('utmUpsUpperLeftHemisphere', value)}
+              onBlur={() => testValidity()}
             />
           </div>
         </Group>
+        {upperLeftErrorMessage ? (
+          <Invalid>
+            <WarningIcon className="fa fa-warning" />
+            <span>{ upperLeftErrorMessage }</span>
+          </Invalid>
+        ) : null}
       </div>
       <div className="input-location">
         <Group>
@@ -181,24 +255,34 @@ const BoundingBoxUtmUps = props => {
               label="Easting"
               value={utmUpsLowerRightEasting}
               onChange={value => setState('utmUpsLowerRightEasting', value)}
+              onBlur={() => testValidity()}
               addon="m"
             />
             <TextField
               label="Northing"
               value={utmUpsLowerRightNorthing}
               onChange={value => setState('utmUpsLowerRightNorthing', value)}
+              onBlur={() => testValidity()}
               addon="m"
             />
             <Zone
               value={utmUpsLowerRightZone}
               onChange={value => setState('utmUpsLowerRightZone', value)}
+              onBlur={() => testValidity()}
             />
             <Hemisphere
               value={utmUpsLowerRightHemisphere}
               onChange={value => setState('utmUpsLowerRightHemisphere',value)}
+              onBlur={() => testValidity()}
             />
           </div>
         </Group>
+        {lowerRightErrorMessage ? (
+          <Invalid>
+            <WarningIcon className="fa fa-warning" />
+            <span>{ lowerRightErrorMessage }</span>
+          </Invalid>
+        ) : null}
       </div>
     </div>
   )
