@@ -20,6 +20,8 @@ const announcement = require('../../../component/announcement/index.jsx')
 const {
   validateInput,
 } = require('../../../component/location-new/utils/dms-utils')
+const usngs = require('usng.js')
+const converter = new usngs.Converter()
 
 interface ErrorState {
   error: boolean
@@ -111,108 +113,170 @@ function getGeometryErrors(filter: any): Set<string> {
   return errors
 }
 
-const latValidator = (value: string) =>
-  Number(value) <= 90 && Number(value) >= -90
-const lonValidator = (value: string) =>
-  Number(value) <= 180 && Number(value) >= -180
-const dmsLatValidator = (value: string) =>
-  validateInput(value, 'dd°mm\'ss.s"') == value
-const dmsLonValidator = (value: string) =>
-  validateInput(value, 'ddd°mm\'ss.s"') == value
-
-export const locationInputValidators: {
-  [key: string]: (value: string) => boolean
-} = {
-  lat: latValidator,
-  lon: lonValidator,
-  west: lonValidator,
-  east: lonValidator,
-  north: latValidator,
-  south: latValidator,
-  dmsLat: dmsLatValidator,
-  dmsLon: dmsLonValidator,
-  dmsNorth: dmsLatValidator,
-  dmsSouth: dmsLatValidator,
-  dmsWest: dmsLonValidator,
-  dmsEast: dmsLonValidator,
-  radius: (value: string | number) => value >= 0.000001,
-  lineWidth: (value: string | number) => value >= 0.000001,
-}
-
-export function getLocationInputError(
+export function validateGeo(
   key: string,
-  value: string
-): { errorMsg: string; defaultCoord?: number } {
-  let errorMsg: string = ''
-  let defaultCoord
-  if (value === undefined) {
-    return { errorMsg, defaultCoord }
+  value: string,
+  value1?: any,
+  value2?: any,
+  value3?: any
+) {
+  switch (key) {
+    case 'lat':
+    case 'north':
+    case 'south':
+      return validateDDLatLon('latitude', 90, value)
+    case 'lon':
+    case 'west':
+    case 'east':
+      return validateDDLatLon('longitude', 180, value)
+    case 'dmsLat':
+    case 'dmsNorth':
+    case 'dmsSouth':
+      return validateDmsLatLon('latitude', value)
+    case 'dmsLon':
+    case 'dmsEast':
+    case 'dmsWest':
+      return validateDmsLatLon('longitude', value)
+    case 'usng':
+      return validateUsng(value)
+    case 'utm':
+      return validateUtmUps(value, value1, value2, value3)
+    case 'radius':
+    case 'lineWidth':
+      return validateRadiusLineBuffer(key, value)
+    default:
   }
-  if (key === 'radius') {
-    errorMsg = ' Radius cannot be empty or less than 0.00001.  '
-  } else if (value !== undefined && value.length === 0) {
-    errorMsg =
-      ' ' +
-      readableNames[key].replace(/^\w/, c => c.toUpperCase()) +
-      ' cannot be empty.  '
-  } else if (!locationInputValidators[key](value)) {
-    defaultCoord = getValidLatLon(key, value)
-    errorMsg =
-      value.replace(/_/g, '0') +
-      ' is not an acceptable ' +
-      readableNames[key] +
-      ' value. Defaulting to ' +
-      defaultCoord +
-      '.  '
+}
+
+function validateDDLatLon(label: string, defaultCoord: number, value: string) {
+  let message = ''
+  let defaultValue
+  if (value !== undefined && value.length === 0) {
+    message = `${label.replace(/^\w/, c => c.toUpperCase())} cannot be empty`
+    return { error: true, message, defaultValue }
   }
-  return { errorMsg, defaultCoord }
+  if (Number(value) > defaultCoord || Number(value) < -1 * defaultCoord) {
+    defaultValue = Number(value) > 0 ? defaultCoord : -1 * defaultCoord
+    message = `${value.replace(
+      /_/g,
+      '0'
+    )} is not an acceptable ${label} value. Defaulting to ${defaultValue}`
+    return { error: true, message, defaultValue }
+  }
+  return { error: false, message, defaultValue }
 }
 
-const readableNames: { [key: string]: string } = {
-  lat: 'latitude',
-  lon: 'longitude',
-  west: 'longitude',
-  east: 'longitude',
-  north: 'latitude',
-  south: 'latitude',
-  dmsLat: 'latitude',
-  dmsLon: 'longitude',
-  dmsNorth: 'latitude',
-  dmsSouth: 'latitude',
-  dmsWest: 'longitude',
-  dmsEast: 'longitude',
-  lineWidth: 'buffer width',
+function validateDmsLatLon(label: string, value: string) {
+  let message = ''
+  let defaultValue
+  const validator = label === 'latitude' ? 'dd°mm\'ss.s"' : 'ddd°mm\'ss.s"'
+  if (value !== undefined && value.length === 0) {
+    message = `${label.replace(/^\w/, c => c.toUpperCase())} cannot be empty`
+    return { error: true, message, defaultValue }
+  }
+  if (validateInput(value, validator) !== value) {
+    defaultValue = validateInput(value, validator)
+    message = `${value.replace(
+      /_/g,
+      '0'
+    )} is not an acceptable ${label} value. Defaulting to ${defaultValue}`
+    return { error: true, message, defaultValue }
+  }
+  return { error: false, message, defaultValue }
 }
 
-const validLatLon: { [key: string]: string } = {
-  lat: '90',
-  lon: '180',
-  west: '180',
-  east: '180',
-  north: '90',
-  south: '90',
-  dmsLat: '90°00\'00"',
-  dmsLon: '180°00\'00"',
+function validateUsng(value: string) {
+  if (value === '') {
+    return { error: true, message: 'USNG / MGRS coordinates cannot be empty' }
+  }
+  const result = converter.USNGtoLL(value, true)
+  const isInvalid = Number.isNaN(result.lat) || Number.isNaN(result.lon)
+  return {
+    error: isInvalid,
+    message: isInvalid ? 'Invalid USNG / MGRS coordinates' : '',
+  }
 }
 
-const getValidLatLon = (key: string, value: string) => {
-  // TODO: change equals
-  if (key == 'dmsLat' || key == 'dmsNorth' || key == 'dmsSouth') {
-    return validateInput(value, 'dd°mm\'ss.s"')
-  } else if (key == 'dmsLon' || key == 'dmsEast' || key == 'dmsWest') {
-    return validateInput(value, 'ddd°mm\'ss.s"')
-  } else {
-    if (Number(value) < 0) {
-      return -1 * Number(validLatLon[key])
-    } else {
-      return Number(validLatLon[key])
+const letterRegex = /[^0-9.]/i
+const northingOffset = 10000000
+
+function upsValidDistance(distance: number) {
+  return distance >= 800000 && distance <= 3200000
+}
+function isLatLonValid(lat: string, lon: string) {
+  const latitude = parseFloat(lat)
+  const longitude = parseFloat(lon)
+  return latitude > -90 && latitude < 90 && longitude > -180 && longitude < 180
+}
+
+function validateUtmUps(
+  utmUpsEasting: string,
+  northing: any,
+  zoneNumber: any,
+  hemisphere: any
+) {
+  let error = { error: false, message: '' }
+  zoneNumber = Number.parseInt(zoneNumber)
+  hemisphere = hemisphere.toUpperCase()
+  let easting = NaN
+  if (utmUpsEasting !== undefined) {
+    easting = letterRegex.test(utmUpsEasting)
+      ? NaN
+      : Number.parseFloat(utmUpsEasting)
+    if (Number.isNaN(easting)) {
+      error = { error: true, message: 'Easting value is invalid' }
     }
   }
+  if (northing !== undefined) {
+    northing = letterRegex.test(northing) ? NaN : Number.parseFloat(northing)
+    if (Number.isNaN(northing)) {
+      error = { error: true, message: 'Northing value is invalid' }
+    } else if (!Number.isNaN(easting)) {
+      const northernHemisphere = hemisphere === 'NORTHERN'
+      const isUps = zoneNumber === 0
+      const utmUpsParts = {
+        easting,
+        northing,
+        zoneNumber,
+        hemisphere,
+        northPole: northernHemisphere,
+      }
+      utmUpsParts.northing =
+        isUps || northernHemisphere ? northing : northing - northingOffset
+      if (
+        isUps &&
+        (!upsValidDistance(northing) || !upsValidDistance(northing))
+      ) {
+        error = { error: true, message: 'Invalid UPS distance' }
+      }
+      let { lat, lon } = converter.UTMUPStoLL(utmUpsParts)
+      lon = lon % 360
+      if (lon < -180) {
+        lon = lon + 360
+      }
+      if (lon > 180) {
+        lon = lon - 360
+      }
+      if (!isLatLonValid(lat, lon)) {
+        error = { error: true, message: 'Invalid UTM/UPS coordinates' }
+      }
+    }
+  }
+  return error
 }
 
-/*
-Error Components
-*/
+function validateRadiusLineBuffer(key: string, value: string) {
+  const label = key === 'lineWidth' ? 'buffer' : 'radius'
+  if ((value !== undefined && value.length === 0) || Number(value) < 0.000001) {
+    return {
+      error: true,
+      message: `${label.replace(/^\w/, c =>
+        c.toUpperCase()
+      )} cannot be less than 0.000001`,
+    }
+  }
+  return { error: false, message: '' }
+}
 
 const Invalid = styled.div`
   background-color: ${props => props.theme.negativeColor};

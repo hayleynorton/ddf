@@ -15,13 +15,8 @@
 import React, { useState } from 'react'
 const { Radio, RadioItem } = require('../radio')
 const TextField = require('../text-field')
-import {
-  locationInputValidators,
-  getLocationInputError,
-  getErrorComponent,
-} from '../utils/validation'
+import { getErrorComponent, validateGeo } from '../utils/validation'
 const { Units, Zone, Hemisphere, MinimumSpacing } = require('./common')
-
 const {
   DmsLatitude,
   DmsLongitude,
@@ -29,55 +24,61 @@ const {
 const DirectionInput = require('../../component/location-new/geo-components/direction.js')
 const { Direction } = require('../../component/location-new/utils/dms-utils.js')
 
-const PointRadiusLatLon = props => {
-  const [latlonState, setLatLonState] = useState({
+const PointRadiusLatLonDd = props => {
+  const { lat, lon, radius, radiusUnits, setState } = props
+  const [ddError, setDdError] = useState({
     error: false,
     message: '',
     defaultValue: '',
   })
   const [radiusError, setRadiusError] = useState({ error: false, message: '' })
-  const { lat, lon, radius, radiusUnits, setState } = props
-  function onBlurLatLon(key, value) {
-    props.callback
-    let { errorMsg, defaultCoord } = getLocationInputError(key, value)
-    setLatLonState({
-      error: value !== undefined && value.length == 0,
-      message: errorMsg,
-      defaultValue: defaultCoord,
-    })
-  }
   return (
     <div>
       <TextField
         type="number"
         label="Latitude"
-        value={lat}
-        onChange={lat => onChangeLatLon('lat', lat, setLatLonState, setState)}
-        onBlur={() => onBlurLatLon('lat', lat)}
-        onFocus={() => {
-          setLatLonState({ error: false, message: '', defaultValue: '' })
+        value={lat !== undefined ? String(lat) : lat}
+        onChange={value => {
+          const { error, message, defaultValue } = validateGeo('lat', value)
+          setDdError({ error, message, defaultValue })
+          defaultValue
+            ? setState('lat', defaultValue)
+            : setState('lat', value)
         }}
+        onFocus={() => {
+          setDdError({ error: false, message: '', defaultValue: '' })
+        }}
+        onBlur={() => setDdError(validateGeo('lat', lat))}
         addon="°"
       />
       <TextField
         type="number"
         label="Longitude"
-        value={lon}
-        onChange={lon => onChangeLatLon('lon', lon, setLatLonState, setState)}
-        onBlur={() => onBlurLatLon('lon', lon)}
+        value={lon !== undefined ? String(lon) : lon}
+        onChange={value => {
+          const { error, message, defaultValue } = validateGeo('lon', value)
+          setDdError({ error, message, defaultValue })
+          defaultValue
+            ? setState('lon', defaultValue)
+            : setState('lon', value)
+        }}
+        onBlur={() => setDdError(validateGeo('lon', lon))}
         addon="°"
       />
-      {getErrorComponent(latlonState)}
+      {getErrorComponent(ddError)}
       <Units
         value={radiusUnits}
-        onChange={radiusUnits => setState('radiusUnits', radiusUnits)}
+        onChange={value => setState('radiusUnits', value)}
       >
         <TextField
           type="number"
           min="0"
           label="Radius"
-          value={radius}
-          onChange={radius => onChangeRadius(radius, setRadiusError, setState)}
+          value={String(radius)}
+          onChange={value => {
+            setRadiusError(validateGeo('radius', value))
+            setState('radius', value)
+          }}
         />
       </Units>
       {getErrorComponent(radiusError)}
@@ -85,37 +86,106 @@ const PointRadiusLatLon = props => {
   )
 }
 
-const usngs = require('usng.js')
-const converter = new usngs.Converter()
+const PointRadiusLatLonDms = props => {
+  const {
+    dmsLat,
+    dmsLon,
+    dmsLatDirection,
+    dmsLonDirection,
+    radius,
+    radiusUnits,
+    setState,
+  } = props
+  const [dmsError, setDmsError] = useState({
+    error: false,
+    message: '',
+    defaultValue: '',
+  })
+  const [radiusError, setRadiusError] = useState({ error: false, message: '' })
+  const latitudeDirections = [Direction.North, Direction.South]
+  const longitudeDirections = [Direction.East, Direction.West]
+
+  function validate(key, type, value) {
+    const { error, message, defaultValue } = validateGeo(key, value)
+    setDmsError({
+      error:
+        type === 'blur' ? value !== undefined && value.length === 0 : error,
+      message,
+      defaultValue,
+    })
+    defaultValue
+      ? setState(key, defaultValue)
+      : setState(key, value)
+  }
+
+  return (
+    <div>
+      <DmsLatitude
+        label="Latitude"
+        value={dmsLat}
+        onChange={(value, type) => validate('dmsLat', type, value)}
+      >
+        <DirectionInput
+          options={latitudeDirections}
+          value={dmsLatDirection}
+          onChange={value => setState('dmsLatDirection', value)}
+        />
+      </DmsLatitude>
+      <DmsLongitude
+        label="Longitude"
+        value={dmsLon}
+        onChange={(value, type) => validate('dmsLon', type, value)}
+      >
+        <DirectionInput
+          options={longitudeDirections}
+          value={dmsLonDirection}
+          onChange={value => setState('dmsLonDirection', value)}
+        />
+      </DmsLongitude>
+      {getErrorComponent(dmsError)}
+      <Units
+        value={radiusUnits}
+        onChange={value => setState('radiusUnits', value)}
+      >
+        <TextField
+          label="Radius"
+          type="number"
+          value={String(radius)}
+          onChange={value => {
+            setRadiusError(validateGeo('radius', value))
+            setState('radius', value)
+          }}
+        />
+      </Units>
+      {getErrorComponent(radiusError)}
+    </div>
+  )
+}
 
 const PointRadiusUsngMgrs = props => {
-  const [error, setError] = useState({ error: false, message: '' })
-  const [radiusError, setRadiusError] = useState({ error: false, message: '' })
   const { usng, radius, radiusUnits, setState } = props
-  function testValidity(usng) {
-    const result = converter.USNGtoLL(usng, true)
-    setError({
-      error: Number.isNaN(result.lat) || Number.isNaN(result.lon),
-      message: 'Invalid USNG / MGRS coords',
-    })
-  }
+  const [usngError, setUsngError] = useState({ error: false, message: '' })
+  const [radiusError, setRadiusError] = useState({ error: false, message: '' })
   return (
     <div>
       <TextField
         label="USNG / MGRS"
         value={usng}
-        onChange={usng => setState('usng', usng)}
-        onBlur={() => testValidity(usng)}
+        onChange={value => setState('usng', value)}
+        onBlur={() => setUsngError(validateGeo('usng', usng))}
       />
-      {getErrorComponent(error)}
+      {getErrorComponent(usngError)}
       <Units
         value={radiusUnits}
-        onChange={radiusUnits => setState('radiusUnits', radiusUnits)}
+        onChange={value => setState('radiusUnits', value)}
       >
         <TextField
           label="Radius"
-          value={radius}
-          onChange={radius => onChangeRadius(radius, setRadiusError, setState)}
+          value={String(radius)}
+          onChange={value => {
+            setRadiusError(validateGeo('radius', value))
+            setState('radius', value)
+          }}
         />
       </Units>
       {getErrorComponent(radiusError)}
@@ -133,99 +203,80 @@ const PointRadiusUtmUps = props => {
     radiusUnits,
     setState,
   } = props
-  const [error, setError] = useState({ error: false, message: '' })
-  const [radiusError, setRadiusError] = useState(false)
-  const letterRegex = /[a-z]/i
-  const northingOffset = 10000000
-  function upsValidDistance(distance) {
-    return distance >= 800000 && distance <= 3200000
-  }
-  function isLatLonValid(lat, lon) {
-    lat = parseFloat(lat)
-    lon = parseFloat(lon)
-    return lat > -90 && lat < 90 && lon > -180 && lon < 180
-  }
-  function testValidity() {
-    utmUpsZone = Number.parseInt(utmUpsZone)
-    utmUpsHemisphere = utmUpsHemisphere.toUpperCase()
-    if (utmUpsEasting !== undefined) {
-      utmUpsEasting = letterRegex.test(utmUpsEasting)
-        ? NaN
-        : Number.parseFloat(utmUpsEasting)
-      if (Number.isNaN(utmUpsEasting)) {
-        setError({ error: true, message: 'Easting value is invalid' })
-      }
-    }
-    if (utmUpsNorthing !== undefined) {
-      utmUpsNorthing = letterRegex.test(utmUpsNorthing)
-        ? NaN
-        : Number.parseFloat(utmUpsNorthing)
-      if (Number.isNaN(utmUpsNorthing)) {
-        setError({ error: true, message: 'Northing value is invalid' })
-      } else if (!Number.isNaN(utmUpsEasting)) {
-        const northernHemisphere = utmUpsHemisphere === 'NORTHERN'
-        const isUps = utmUpsZone === 0
-        const utmUpsParts = {
-          easting: utmUpsEasting,
-          northing: utmUpsNorthing,
-          zoneNumber: utmUpsZone,
-          hemisphere: utmUpsHemisphere,
-          northPole: northernHemisphere,
-        }
-        utmUpsParts.northing =
-          isUps || northernHemisphere
-            ? utmUpsNorthing
-            : utmUpsNorthing - northingOffset
-        if (
-          isUps &&
-          (!upsValidDistance(utmUpsNorthing) ||
-            !upsValidDistance(utmUpsEasting))
-        ) {
-          setError({ error: true, message: 'Invalid UPS distance' })
-        }
-        let { lat, lon } = converter.UTMUPStoLL(utmUpsParts)
-        lon = lon % 360
-        if (lon < -180) {
-          lon = lon + 360
-        }
-        if (lon > 180) {
-          lon = lon - 360
-        }
-        if (!isLatLonValid(lat, lon)) {
-          setError({ error: true, message: 'Invalid UTM/UPS coordinates' })
-        } else {
-          setError({ error: false, message: '' })
-        }
-      }
-    }
-  }
+  const [utmError, setUtmError] = useState({ error: false, message: '' })
+  const [radiusError, setRadiusError] = useState({ error: false, message: '' })
+
   return (
     <div>
       <TextField
         label="Easting"
-        value={utmUpsEasting}
+        value={
+          utmUpsEasting !== undefined ? String(utmUpsEasting) : utmUpsEasting
+        }
         onChange={value => setState('utmUpsEasting', value)}
-        onBlur={() => testValidity()}
+        onBlur={() =>
+          setUtmError(
+            validateGeo(
+              'utm',
+              utmUpsEasting,
+              utmUpsNorthing,
+              utmUpsZone,
+              utmUpsHemisphere
+            )
+          )
+        }
         addon="m"
       />
       <TextField
         label="Northing"
-        value={utmUpsNorthing}
+        value={
+          utmUpsNorthing !== undefined ? String(utmUpsNorthing) : utmUpsNorthing
+        }
         onChange={value => setState('utmUpsNorthing', value)}
-        onBlur={() => testValidity()}
+        onBlur={() =>
+          setUtmError(
+            validateGeo(
+              'utm',
+              utmUpsEasting,
+              utmUpsNorthing,
+              utmUpsZone,
+              utmUpsHemisphere
+            )
+          )
+        }
         addon="m"
       />
       <Zone
         value={utmUpsZone}
         onChange={value => setState('utmUpsZone', value)}
-        onBlur={() => testValidity()}
+        onBlur={() =>
+          setUtmError(
+            validateGeo(
+              'utm',
+              utmUpsEasting,
+              utmUpsNorthing,
+              utmUpsZone,
+              utmUpsHemisphere
+            )
+          )
+        }
       />
       <Hemisphere
         value={utmUpsHemisphere}
         onChange={value => setState('utmUpsHemisphere', value)}
-        onBlur={() => testValidity()}
+        onBlur={() =>
+          setUtmError(
+            validateGeo(
+              'utm',
+              utmUpsEasting,
+              utmUpsNorthing,
+              utmUpsZone,
+              utmUpsHemisphere
+            )
+          )
+        }
       />
-      {getErrorComponent(error)}
+      {getErrorComponent(utmError)}
       <Units
         value={radiusUnits}
         onChange={value => setState('radiusUnits', value)}
@@ -233,78 +284,10 @@ const PointRadiusUtmUps = props => {
         <TextField
           label="Radius"
           value={String(radius)}
-          onChange={value => setState('radius', value)}
-          onBlur={() => setRadiusError(radius < 0.000001)}
-        />
-      </Units>
-      {getErrorComponent({
-        error: radiusError,
-        message: 'Radius must be greater than 0.000001',
-      })}
-    </div>
-  )
-}
-
-const PointRadiusDms = props => {
-  const [latlonState, setLatLonState] = useState({
-    error: false,
-    message: '',
-    defaultValue: '',
-  })
-  const [radiusError, setRadiusError] = useState({ error: false, message: '' })
-  const {
-    dmsLat,
-    dmsLon,
-    dmsLatDirection,
-    dmsLonDirection,
-    radius,
-    radiusUnits,
-    setState,
-  } = props
-  const latitudeDirections = [Direction.North, Direction.South]
-  const longitudeDirections = [Direction.East, Direction.West]
-  return (
-    <div>
-      <DmsLatitude
-        label="Latitude"
-        value={dmsLat}
-        onChange={(dmsLat, type) =>
-          onChangeDms('dmsLat', dmsLat, type, setLatLonState, setState)
-        }
-      >
-        <DirectionInput
-          options={latitudeDirections}
-          value={dmsLatDirection}
-          onChange={dmsLatDirection =>
-            setState('dmsLatDirection', dmsLatDirection)
-          }
-        />
-      </DmsLatitude>
-      <DmsLongitude
-        label="Longitude"
-        value={dmsLon}
-        onChange={(dmsLon, type) =>
-          onChangeDms('dmsLon', dmsLon, type, setLatLonState, setState)
-        }
-      >
-        <DirectionInput
-          options={longitudeDirections}
-          value={dmsLonDirection}
-          onChange={dmsLonDirection =>
-            setState('dmsLonDirection', dmsLonDirection)
-          }
-        />
-      </DmsLongitude>
-      {getErrorComponent(latlonState)}
-      <Units
-        value={radiusUnits}
-        onChange={radiusUnits => setState('radiusUnits', radiusUnits)}
-      >
-        <TextField
-          label="Radius"
-          type="number"
-          value={radius}
-          onChange={radius => onChangeRadius(radius, setRadiusError, setState)}
+          onChange={value => {
+            setRadiusError(validateGeo('radius', value))
+            setState('radius', value)
+          }}
         />
       </Units>
       {getErrorComponent(radiusError)}
@@ -316,8 +299,8 @@ const PointRadius = props => {
   const { setState, locationType } = props
 
   const inputs = {
-    latlon: PointRadiusLatLon,
-    dms: PointRadiusDms,
+    dd: PointRadiusLatLonDd,
+    dms: PointRadiusLatLonDms,
     usng: PointRadiusUsngMgrs,
     utmUps: PointRadiusUtmUps,
   }
@@ -328,9 +311,9 @@ const PointRadius = props => {
     <div>
       <Radio
         value={locationType}
-        onChange={locationType => setState('locationType', locationType)}
+        onChange={value => setState('locationType', value)}
       >
-        <RadioItem value="latlon">Lat / Lon (DD)</RadioItem>
+        <RadioItem value="dd">Lat / Lon (DD)</RadioItem>
         <RadioItem value="dms">Lat / Lon (DMS)</RadioItem>
         <RadioItem value="usng">USNG / MGRS</RadioItem>
         <RadioItem value="utmUps">UTM / UPS</RadioItem>
@@ -341,50 +324,6 @@ const PointRadius = props => {
       </div>
     </div>
   )
-}
-
-/*
-**************
-HELPER METHODS
-**************
-*/
-
-function onChangeLatLon(key, value, setLatLonState, setState) {
-  let { errorMsg, defaultCoord } = getLocationInputError(key, value)
-  setLatLonState({
-    error: !locationInputValidators[key](value),
-    message: errorMsg,
-    defaultValue: defaultCoord || '',
-  })
-  if (defaultCoord && defaultCoord.length != 0) {
-    value = defaultCoord
-  }
-  setState(key, value)
-}
-
-function onChangeDms(key, value, type, setLatLonState, setState) {
-  let { errorMsg, defaultCoord } = getLocationInputError(key, value)
-  setLatLonState({
-    error:
-      type == 'blur'
-        ? value !== undefined && value.length == 0
-        : !locationInputValidators[key](value),
-    message: errorMsg,
-    defaultValue: defaultCoord || '',
-  })
-  if (defaultCoord && defaultCoord.length != 0) {
-    value = defaultCoord
-  }
-  setState(key, value)
-}
-
-function onChangeRadius(value, setRadiusError, setState) {
-  let { errorMsg } = getLocationInputError('radius', value)
-  setRadiusError({
-    error: !locationInputValidators['radius'](value),
-    message: errorMsg,
-  })
-  setState('radius', value)
 }
 
 module.exports = PointRadius

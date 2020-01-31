@@ -55,7 +55,7 @@ class Keyword extends React.Component {
           const polygon = geometry.coordinates[0]
           this.props.setState({
             hasKeyword: true,
-            locationType: 'latlon',
+            locationType: 'dd',
             polygon,
             polyType: 'polygon',
             value: this.state.value,
@@ -70,7 +70,7 @@ class Keyword extends React.Component {
           )
           this.props.setState({
             hasKeyword: true,
-            locationType: 'latlon',
+            locationType: 'dd',
             polygon,
             polyType: 'multipolygon',
             value: this.state.value,

@@ -15,7 +15,6 @@
 export {
   showErrorMessages,
   getFilterErrors,
-  locationInputValidators,
-  getLocationInputError,
+  validateGeo,
   getErrorComponent,
 } from './validation'

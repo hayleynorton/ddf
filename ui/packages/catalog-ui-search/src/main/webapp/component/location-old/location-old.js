@@ -101,8 +101,8 @@ module.exports = Backbone.AssociatedModel.extend({
     mapSouth: undefined,
     radiusUnits: 'meters',
     radius: '',
-    locationType: 'latlon',
-    prevLocationType: 'latlon',
+    locationType: 'dd',
+    prevLocationType: 'dd',
     lat: undefined,
     lon: undefined,
     dmsLat: '',
@@ -235,7 +235,7 @@ module.exports = Backbone.AssociatedModel.extend({
     const locationType = this.get('locationType')
     if (locationType === 'utmUps') {
       this.set('prevLocationType', 'utmUps')
-      this.set('locationType', 'latlon')
+      this.set('locationType', 'dd')
     }
     this.drawing = true
     store.get('content').turnOnDrawing(this)
@@ -321,7 +321,7 @@ module.exports = Backbone.AssociatedModel.extend({
   },
 
   setLatLon() {
-    if (this.get('locationType') === 'latlon') {
+    if (this.get('locationType') === 'dd') {
       let result = {}
       result.north = this.get('mapNorth')
       result.south = this.get('mapSouth')
@@ -447,7 +447,7 @@ module.exports = Backbone.AssociatedModel.extend({
 
     if (
       (!store.get('content').get('drawing') &&
-        this.get('locationType') !== 'latlon') ||
+        this.get('locationType') !== 'dd') ||
       !this.isLatLonValid(lat, lon)
     ) {
       return
@@ -871,7 +871,7 @@ module.exports = Backbone.AssociatedModel.extend({
   },
 
   handleLocationType() {
-    if (this.get('locationType') === 'latlon') {
+    if (this.get('locationType') === 'dd') {
       this.set({
         north: this.get('mapNorth'),
         south: this.get('mapSouth'),

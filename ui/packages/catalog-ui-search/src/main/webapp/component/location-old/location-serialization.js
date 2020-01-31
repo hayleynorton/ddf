@@ -98,7 +98,7 @@ const Point = {
 
     return {
       mode: 'circle',
-      locationType: 'latlon',
+      locationType: 'dd',
       lat,
       lon,
       radius: width,
