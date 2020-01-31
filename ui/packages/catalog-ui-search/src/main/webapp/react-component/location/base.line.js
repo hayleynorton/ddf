@@ -60,9 +60,13 @@ class BaseLine extends React.Component {
                 value = this.convertWkt(value, 2)
               }
               this.setState({ value })
-
               try {
-                setState(geometryKey, JSON.parse(value))
+                //handle case where user clears input; JSON.parse('') would throw an error and maintain previous state
+                if(value === '') {
+                  setState(geometryKey, undefined)
+                } else {
+                  setState(geometryKey, JSON.parse(value))
+                }
               } catch (e) {
                 // do nothing
               }
@@ -85,7 +89,7 @@ class BaseLine extends React.Component {
               type="number"
               label="Buffer width"
               min={0.000001}
-              value={`${props[widthKey]}`}
+              value={String(props[widthKey])}
               onChange={value => setState(widthKey, value)}
             />
           </Units>

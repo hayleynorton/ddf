@@ -34,7 +34,7 @@ const PointRadiusLatLon = props => {
       <TextField
         type="number"
         label="Latitude"
-        value={lat}
+        value={lat !== undefined ? String(lat) : lat}
         onChange={value => setState('lat', value)}
         onBlur={props.callback}
         addon="°"
@@ -42,7 +42,7 @@ const PointRadiusLatLon = props => {
       <TextField
         type="number"
         label="Longitude"
-        value={lon}
+        value={lon !== undefined ? String(lon) : lon}
         onChange={value => setState('lon', value)}
         addon="°"
       />
@@ -163,14 +163,14 @@ const PointRadiusUtmUps = props => {
     <div>
       <TextField
         label="Easting"
-        value={utmUpsEasting}
+        value={utmUpsEasting ? String(utmUpsEasting) : utmUpsEasting}
         onChange={value => setState('utmUpsEasting', value)}
         onBlur={() => testValidity()}
         addon="m"
       />
       <TextField
         label="Northing"
-        value={utmUpsNorthing}
+        value={utmUpsNorthing ? String(utmUpsNorthing) : utmUpsNorthing}
         onChange={value => setState('utmUpsNorthing', value)}
         onBlur={() => testValidity()}
         addon="m"
