@@ -388,6 +388,8 @@ module.exports = Backbone.AssociatedModel.extend({
       return
     }
 
+    this.setBboxDmsFromMap()
+
     let utmUps = this.LLtoUtmUps(north, west)
     if (utmUps !== undefined) {
       var utmUpsParts = this.formatUtmUps(utmUps)
@@ -836,20 +838,17 @@ module.exports = Backbone.AssociatedModel.extend({
   },
 
   setLatLonFromDms(dmsCoordinateKey, dmsDirectionKey, latLonKey) {
-    const coordinate = {}
-    coordinate.coordinate = this.get(dmsCoordinateKey)
-
-    const isDmsInputIncomplete =
-      coordinate.coordinate && coordinate.coordinate.includes('_')
-    if (isDmsInputIncomplete) {
-      return
-    }
-
-    coordinate.direction = this.get(dmsDirectionKey)
-
-    const dmsCoordinate = dmsUtils.parseDmsCoordinate(coordinate)
+    const dmsCoordinate = dmsUtils.parseDmsCoordinate(
+      this.get(dmsCoordinateKey)
+    )
     if (dmsCoordinate) {
-      this.set(latLonKey, dmsUtils.dmsCoordinateToDD(dmsCoordinate))
+      this.set(
+        latLonKey,
+        dmsUtils.dmsCoordinateToDD({
+          ...dmsCoordinate,
+          direction: this.get(dmsDirectionKey),
+        })
+      )
     } else {
       this.set(latLonKey, undefined)
     }

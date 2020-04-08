@@ -44,7 +44,7 @@ class MaskedTextField extends React.Component {
                     setRef(ref)
                     this.ref = ref
                   }}
-                  value={defaultValue}
+                  value={defaultValue || ''}
                   {...props}
                 />
               )
