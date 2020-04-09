@@ -19,9 +19,21 @@ const CustomElements = require('../../../js/CustomElements.js')
 const Component = CustomElements.registerReact('text-field')
 
 class MaskedTextField extends React.Component {
+
+  padDecimalWithZeros(value) {
+    const decimal = value.toString().split('\'')
+    const decimalParts = decimal[1].toString().split('.')
+    const decimalEnd = decimalParts[1].replace('\"', '')
+    if (decimalParts.length > 1) {
+      return `${decimal[0]}'${decimalParts[0]}.${decimalEnd.padEnd(3, '0')}"`
+    }
+    return value
+  }
+
   render() {
     // eslint-disable-next-line no-unused-vars
-    const { label, addon, onChange, value, ...args } = this.props
+    const { label, addon, onChange, ...args } = this.props
+    const value = this.padDecimalWithZeros(this.props.value)
     return (
       <Component>
         <Group>
@@ -33,7 +45,7 @@ class MaskedTextField extends React.Component {
           ) : null}
           <MaskedInput
             value={value}
-            keepCharPositions
+            
             onChange={e => {
               this.props.onChange(e.target.value)
             }}
