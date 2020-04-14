@@ -194,7 +194,7 @@ module.exports = Backbone.AssociatedModel.extend({
       'change:utmUpsUpperLeftEasting change:utmUpsUpperLeftNorthing change:utmUpsUpperLeftZone change:utmUpsUpperLeftHemisphere change:utmUpsLowerRightEasting change:utmUpsLowerRightNorthing change:utmUpsLowerRightZone change:utmUpsLowerRightHemisphere',
       this.setBboxUtmUps
     )
-    this.listenTo(this, 'EndExtent', this.notDrawing)
+    this.listenTo(this, 'EndExtent', this.drawingOff)
     this.listenTo(this, 'BeginExtent', this.drawingOn)
     if (this.get('color') === undefined && store.get('content').get('query')) {
       this.set(
@@ -208,7 +208,10 @@ module.exports = Backbone.AssociatedModel.extend({
       this.set('color', '#c89600')
     }
   },
-  notDrawing() {
+  drawingOff() {
+    if (this.get('locationType') === 'dms') {
+      this.setBboxDmsFromMap()
+    }
     const prevLocationType = this.get('prevLocationType')
     if (prevLocationType === 'utmUps') {
       this.set('prevLocationType', '')
@@ -387,8 +390,6 @@ module.exports = Backbone.AssociatedModel.extend({
     if (!this.isLatLonValid(north, west) || !this.isLatLonValid(south, east)) {
       return
     }
-
-    this.setBboxDmsFromMap()
 
     let utmUps = this.LLtoUtmUps(north, west)
     if (utmUps !== undefined) {
