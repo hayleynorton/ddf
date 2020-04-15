@@ -79,10 +79,10 @@ export function validateGeo(key: string, value: any) {
       return validateDmsLatLon(LONGITUDE, value)
     case 'usng':
       return validateUsng(value)
-    case 'utmUpsEasting':
-    case 'utmUpsNorthing':
-    case 'utmUpsZone':
-    case 'utmUpsHemisphere':
+    case 'easting':
+    case 'northing':
+    case 'zoneNumber':
+    case 'hemisphere':
       return validateUtmUps(key, value)
     case 'radius':
     case 'lineWidth':
@@ -246,7 +246,9 @@ function getGeometryErrors(filter: any): Set<string> {
         [east, west, north, south].some(
           direction => direction === '' || direction === undefined
         ) ||
-        Number(south) >= Number(north)
+        Number(south) >= Number(north) ||
+        hasPointError([west, north]) ||
+        hasPointError([east, south])
       ) {
         errors.add('Bounding box must have valid values')
       }

@@ -253,19 +253,17 @@ Draw.BboxView = Marionette.View.extend({
   drawBorderedRectangle(rectangle) {
     if (!rectangle) {
       // handles case where model changes to empty vars and we don't want to draw anymore
-
       return
     }
 
     if (
-      isNaN(rectangle.north) ||
-      isNaN(rectangle.south) ||
-      isNaN(rectangle.east) ||
-      isNaN(rectangle.west)
+      !rectangle.north ||
+      !rectangle.south ||
+      !rectangle.east ||
+      !rectangle.west
     ) {
       // handles case where model is incomplete and we don't want to draw anymore
       this.destroyOldPrimitive()
-
       return
     }
 

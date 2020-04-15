@@ -23,6 +23,7 @@ const NotificationView = require('./notification.view')
 const DrawingController = require('./drawing.controller')
 const olUtils = require('../OpenLayersGeometryUtils')
 const DistanceUtils = require('../DistanceUtils.js')
+import { validateGeo } from '../../react-component/utils/validation'
 
 const Draw = {}
 
@@ -73,12 +74,15 @@ Draw.BboxView = Marionette.View.extend({
     let east = parseFloat(model.get('mapEast'))
     let west = parseFloat(model.get('mapWest'))
 
+    if (!north || !south || !east || !west) {
+      return
+    }
+
     // If south is greater than north, return in order to
     // prevent displaying the shape on the map
     if (south > north) {
       return
     }
-
     // If we are crossing the date line, we must go outside [-180, 180]
     // for openlayers to draw correctly. This means we can't draw boxes
     // that encompass more than half the world. This actually matches
@@ -116,6 +120,11 @@ Draw.BboxView = Marionette.View.extend({
     coords.push(southEast)
     coords.push(southWest)
     coords.push(northWest)
+
+    if (validateGeo('polygon', JSON.stringify(coords)).error) {
+      return
+    }
+
     const rectangle = new ol.geom.LineString(coords)
     return rectangle
   },
@@ -126,8 +135,8 @@ Draw.BboxView = Marionette.View.extend({
     if (
       rectangle &&
       !_.isUndefined(rectangle) &&
-      (model.get('north') !== model.get('south') &&
-        model.get('east') !== model.get('west'))
+      model.get('north') > model.get('south') &&
+      model.get('east') !== model.get('west')
     ) {
       this.drawBorderedRectangle(rectangle)
       //only call this if the mouse button isn't pressed, if we try to draw the border while someone is dragging
