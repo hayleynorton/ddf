@@ -60,6 +60,13 @@ class PolygonRenderView extends GeometryRenderView {
     this.listenForCameraChange()
   }
 
+  destroyOldPrimitive = () => {
+    if (this.primitive && !this.primitive.isDestroyed()) {
+      this.map.scene.primitives.remove(this.primitive)
+      //this.map.scene.requestRender()
+    }
+  }
+
   drawGeometry = model => {
     const json = model.toJSON()
     if (!Array.isArray(json.polygon)) {
@@ -69,8 +76,14 @@ class PolygonRenderView extends GeometryRenderView {
     const polygons = isMultiPolygon ? json.polygon : [json.polygon]
 
     // first destroy old one
-    if (this.primitive && !this.primitive.isDestroyed()) {
-      this.map.scene.primitives.remove(this.primitive)
+    this.destroyOldPrimitive
+
+    if (
+      polygons.some(
+        polygon => validateGeo('polygon', JSON.stringify(polygon)).error
+      )
+    ) {
+      return
     }
 
     this.primitive = new Cesium.PolylineCollection()
