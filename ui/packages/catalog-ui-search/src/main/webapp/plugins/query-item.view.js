@@ -12,24 +12,4 @@
  * <http://www.gnu.org/licenses/lgpl.html>.
  *
  **/
-
-const Marionette = require('marionette')
-const CustomElements = require('../../js/CustomElements.js')
-const queryItemView = require('./query-item.view')
-const store = require('../../js/store.js')
-//const plugin = require('plugins/query-item.collection.view')
-
-const QueryItemCollection = Marionette.CollectionView.extend({
-  setDefaultCollection() {
-    this.collection = store.getCurrentQueries()
-  },
-  tagName: CustomElements.register('query-item-collection'),
-  childView: queryItemView,
-  initialize(options) {
-    if (!options.collection) {
-      this.setDefaultCollection()
-    }
-  },
-})
-
-module.exports = QueryItemCollection //plugin(QueryItemCollection)
+module.exports = v => v

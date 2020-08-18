@@ -22,10 +22,11 @@ const QueryFeedView = require('../query-feed/query-feed.view.js')
 const QueryScheduleView = require('../query-schedule/query-schedule.view.js')
 const QuerySettingsView = require('../query-settings/query-settings.view.js')
 const QueryEditorView = require('../query-editor/query-editor.view.js')
+const plugin = require('plugins/query-item.view')
 require('../../behaviors/button.behavior.js')
 require('../../behaviors/dropdown.behavior.js')
 
-module.exports = Marionette.LayoutView.extend({
+module.exports = plugin(Marionette.LayoutView.extend({
   template,
   attributes() {
     return {
@@ -137,4 +138,4 @@ module.exports = Marionette.LayoutView.extend({
     this.model.cancelCurrentSearches()
     e.stopPropagation()
   },
-})
+}))
